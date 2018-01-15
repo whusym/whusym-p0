@@ -46,7 +46,6 @@ if __name__ == "__main__":
     counts = books.map(lambda x: x[1].lower()).flatMap(lambda x: x.split(' ')).map(lambda x: (x, 1)).reduceByKey(add)
     new_count = counts.filter(lambda x: x[1]>2).collect() #get rid of lower words with lower than 2 appearances
     res = sorted(new_count, key=lambda x:x[1], reverse = True) #sort the list as the result
-    print (res)
     res = res[0:int(sys.argv[1])] # get the top x number of words. x provided by sys.argv[1]
     res_file = os.path.join(script_dir, 's1.json')
     with open(res_file, 'w') as file:
