@@ -25,7 +25,6 @@ from operator import add
 from pyspark.sql import SparkSession
 from pyspark import SparkContext
 from collections import OrderedDict
-import string
 
 if __name__ == "__main__":
     """
@@ -43,11 +42,15 @@ if __name__ == "__main__":
 
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     data_path = os.path.join(script_dir, 'data/')
+    books = spark.sparkContext.wholeTextFiles(data_path) # Books (*.txt files) are in the /data folder
+
+    #stopwords
     sw_path = os.path.join(script_dir, 'stopwords.txt')
     sw = spark.sparkContext.textFile(sw_path)
     swlist = spark.sparkContext.broadcast(sw.collect())
-    books = spark.sparkContext.wholeTextFiles(data_path) # Books (*.txt files) are in the /data folder
-    punc_path = os.path.join(script_dir, 'punc.txt')
+
+    #punctuations
+    punc_path = os.path.join(script_dir, str(sys.argv[2]))
     punc = spark.sparkContext.textFile(punc_path)
     punc_list = spark.sparkContext.broadcast(punc.collect())
 
