@@ -32,6 +32,8 @@ if __name__ == "__main__":
     if len(sys.argv) != 2 or not int(sys.argv[1]):
         print("Please only add one integer as the argument")
         exit(-1)
+
+    #initiate a spark session
     spark = SparkSession\
         .builder\
         .appName("WordCounter")\
@@ -41,8 +43,6 @@ if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     data_path = os.path.join(script_dir, 'data/')
     books = spark.sparkContext.wholeTextFiles(data_path) # Books (*.txt files) are in the /data folder
-    books.collect()
-    print (books)
     counts = books.map(lambda x: x[1].lower()).flatMap(lambda x: x.split(' ')).map(lambda x: (x, 1)).reduceByKey(add)
     new_count = counts.filter(lambda x: x[1]>2).collect() #get rid of lower words with lower than 2 appearances
     res = sorted(new_count, key=lambda x:x[1], reverse = True) #sort the list as the result
