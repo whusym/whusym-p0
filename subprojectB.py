@@ -24,6 +24,7 @@ import json, sys, os
 from operator import add
 from pyspark.sql import SparkSession
 from pyspark import SparkContext
+from collections import OrderedDict
 
 if __name__ == "__main__":
     """
@@ -52,4 +53,4 @@ if __name__ == "__main__":
     res = res[0:int(sys.argv[1])] # get the top x number of words. x provided by sys.argv[1]
     res_file = os.path.join(script_dir, 's2.json')
     with open(res_file, 'w') as file:
-        json.dump(dict(res), file)
+        json.dump(OrderedDict(res), file)
