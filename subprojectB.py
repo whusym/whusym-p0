@@ -30,7 +30,7 @@ if __name__ == "__main__":
     """
     Usage: calculate the total word counts for top words among 8 books in the Gutenberg Project
     """
-    if len(sys.argv) != 2 or not int(sys.argv[1]):
+    if len(sys.argv) != 3 or not int(sys.argv[1]):
         print("Please only add one integer as the argument")
         exit(-1)
 
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     data_path = os.path.join(script_dir, 'data/')
-    sw_path = os.path.join(script_dir, 'stopwords.txt')
+    sw_path = os.path.join(script_dir, sys.argv[2])
     sw = spark.sparkContext.textFile(sw_path)
     swlist = spark.sparkContext.broadcast(sw.collect())
     books = spark.sparkContext.wholeTextFiles(data_path) # Books (*.txt files) are in the /data folder

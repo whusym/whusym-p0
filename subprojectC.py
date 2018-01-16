@@ -30,7 +30,7 @@ if __name__ == "__main__":
     """
     Usage: calculate the total word counts for top words among 8 books in the Gutenberg Project
     """
-    if len(sys.argv) != 3 or not int(sys.argv[1]):
+    if len(sys.argv) != 4 or not int(sys.argv[1]):
         print("Please set one integer as the first argument and a punctuation file as the second argument")
         exit(-1)
 
@@ -45,31 +45,51 @@ if __name__ == "__main__":
     books = spark.sparkContext.wholeTextFiles(data_path) # Books (*.txt files) are in the /data folder
 
     #stopwords
-    sw_path = os.path.join(script_dir, 'stopwords.txt')
+    sw_path = os.path.join(script_dir, str(sys.argv[2]))
     sw = spark.sparkContext.textFile(sw_path)
     swlist = spark.sparkContext.broadcast(sw.collect())
 
     #punctuations
-    punc_path = os.path.join(script_dir, str(sys.argv[2]))
-    punc = spark.sparkContext.textFile(punc_path)
-    punc_list = spark.sparkContext.broadcast(punc.collect())
+    punc_path = os.path.join(script_dir, str(sys.argv[3]))
+    with open(punc_path, 'r') as f:
+        punc = f.read()
+
+    # # punc = spark.sparkContext.textFile(punc_path, use_unicode=False)
+    # punc = spark.sparkContext.parallelize(punc)
+    # print (punc.collect())
+    punc_list = spark.sparkContext.broadcast(punc)
+    print (punc_list.value)
+
+    def split(x):
+        x = x.splitlines()
+        x = ' '.join(x)
+        # x = x.split(' ')
+        # a = []
+        return x
 
     def strip_front(x):
-        if x[0] in punc_list.value :
-            return x[1:]
-        else:
+        try:
+            while x[0] in punc_list.value: # change it to while
+                x = x[1:]
+        except IndexError:
             return x
+        return x
 
     def strip_end(x):
-        if x[-1] in punc_list.value:
-            return x[:-1]
-        else:
+        try:
+            while x[-1] in punc_list.value:  # change it to while
+                x = x[:-1]
+        except IndexError:
             return x
+        return x
 
-    counts = books.map(lambda x: x[1].lower()).flatMap(lambda x: x.split(' ')).filter(lambda x : len(x) > 1).map(strip_front).map(strip_end).map(lambda x: (x, 1)).reduceByKey(add)
-    new_count = counts.filter(lambda x: x[0] not in swlist.value).collect() #get rid of lower words with lower than 2 appearances
+
+
+
+    counts = books.map(lambda x: x[1].lower()).map(split).flatMap(lambda x: x.split(' ')).filter(lambda x: len(x) > 1).map(strip_end).map(strip_front)
+    new_count = counts.map(lambda x: (x, 1)).reduceByKey(add).filter(lambda x: x[0] != "").filter(lambda x: x[0] not in swlist.value).collect() #remove stop words
     res = sorted(new_count, key=lambda x:x[1], reverse = True) #sort the list as the result
-    res = res[0:int(sys.argv[1])] # get the top x number of words. x provided by sys.argv[1]
-    res_file = os.path.join(script_dir, 's3.json')
+    res = res[0:1+int(sys.argv[1])] # get the top x number of words. x provided by sys.argv[1]
+    res_file = os.path.join(script_dir, 'sp3.json')
     with open(res_file, 'w') as file:
         json.dump(OrderedDict(res), file)
