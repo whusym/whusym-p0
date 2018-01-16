@@ -58,7 +58,7 @@ if __name__ == "__main__":
     # punc = spark.sparkContext.parallelize(punc)
     # print (punc.collect())
     punc_list = spark.sparkContext.broadcast(punc)
-    print (punc_list.value)
+    # print (punc_list.value)
 
     def split(x):
         x = x.splitlines()
@@ -67,29 +67,14 @@ if __name__ == "__main__":
         # a = []
         return x
 
-    def strip_front(x):
-        try:
-            while x[0] in punc_list.value: # change it to while
-                x = x[1:]
-        except IndexError:
-            return x
-        return x
-
-    def strip_end(x):
-        try:
-            while x[-1] in punc_list.value:  # change it to while
-                x = x[:-1]
-        except IndexError:
-            return x
-        return x
 
 
 
-
-    counts = books.map(lambda x: x[1].lower()).map(split).flatMap(lambda x: x.split(' ')).filter(lambda x: len(x) > 1).map(strip_end).map(strip_front)
+    counts = books.map(lambda x: x[1].lower()).map(split).flatMap(lambda x: x.split(' ')).filter(lambda x: len(x) > 1).filter(lambda x: x[-1] not in punc_list.value).\
+    filter(lambda x: x[0] not in punc_list.value)
     new_count = counts.map(lambda x: (x, 1)).reduceByKey(add).filter(lambda x: x[0] != "").filter(lambda x: x[0] not in swlist.value).collect() #remove stop words
     res = sorted(new_count, key=lambda x:x[1], reverse = True) #sort the list as the result
-    res = res[0:1+int(sys.argv[1])] # get the top x number of words. x provided by sys.argv[1]
+    res = res[0:int(sys.argv[1])] # get the top x number of words. x provided by sys.argv[1]
     res_file = os.path.join(script_dir, 'sp3.json')
     with open(res_file, 'w') as file:
         json.dump(OrderedDict(res), file)
