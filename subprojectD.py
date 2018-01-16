@@ -37,7 +37,7 @@ if __name__ == "__main__":
     #initiate a spark session
     spark = SparkSession\
         .builder\
-        .appName("WordCounterWithoutPunc")\
+        .appName("tfidf")\
         .getOrCreate()
 
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -69,8 +69,9 @@ if __name__ == "__main__":
                     x[1][i] = v[:-1]
         return x
 
+
     def word_count(x):
-        return [((v, x[0][-6:]), 1) for i, v in enumerate(x[1])]
+        return [(v, 1) for i, v in enumerate(x[1])]
 
     def count_dict_per_doc(x):
         return (x[0][0],(x[0][1], x[1]))
@@ -81,19 +82,19 @@ if __name__ == "__main__":
         '''
         pass
 
-
+    def format_count(x):
+        return [((v[0], x[1]), 1)for i, v in enumerate(x[0])]
 
     def string_count(x):
         return [((x[0], i), 1) for i in x[1]]
 
 
     # print (books.map(lambda x: (x[0], x[1].lower())).flatMap(lambda x: (x[0], x[1].split(' '))).collect())
-    counts = books.map(lambda x: (x[0], x[1].lower())).flatMap(lambda x: [(x[0], x[1].split(' '))]).map(strip).map(word_count).\
-    flatMap(lambda x: [(i[0], i[1]) for i in x]).reduceByKey(add).map(count_dict_per_doc)
-        #.zipWithIndex().map(get_count)#\
-
-
+    counts = books.map(lambda x: (x[0], x[1].lower())).flatMap(lambda x: [(x[0], x[1].split(' '))]).map(strip).map(word_count).zipWithIndex().map(format_count).\
+    flatMap(lambda x: [(i[0], i[1]) for i in x]).reduceByKey(add).map(count_dict_per_doc).groupByKey().mapValues(list)
+        #.zipWithIndex().map(get_count)#
     # #.groupByKey()
+    # print (counts.type)
     # for x in counts:
     #     strip(x)
     #     print (x)
