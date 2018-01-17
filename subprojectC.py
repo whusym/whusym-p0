@@ -59,15 +59,27 @@ if __name__ == "__main__":
 
 
     def split(x):
+        '''
+        Split characters in a documents (including removing newline markers).
+        '''
         x = x.splitlines()
         x = ' '.join(x)
         return x
 
-    counts = books.map(lambda x: x[1].lower()).map(split).flatMap(lambda x: x.split(' ')).filter(lambda x: len(x) > 1).filter(lambda x: x[-1] not in punc_list.value).\
-    filter(lambda x: x[0] not in punc_list.value)    #count words and remove the keys containing punctuation markers in the beginning or end
-    new_count = counts.map(lambda x: (x, 1)).reduceByKey(add).filter(lambda x: x[0] != "").filter(lambda x: x[0] not in swlist.value).collect() #remove stop words
+    def strip_end(x):
+        return (x[0][:-1], x[1]) if x[0][-1] in punc_list.value else (x[0], x[1])
+
+    def strip_front(x):
+        return (x[0][1:], x[1]) if x[0][0] in punc_list.value else (x[0], x[1])
+
+    #count words in RDD
+    counts = books.map(lambda x: x[1].lower()).map(split).flatMap(lambda x: x.split(' ')).filter(lambda x: len(x) > 1)    #count words and remove the keys containing punctuation markers in the beginning or end
+    new_count = counts.map(lambda x: (x, 1)).reduceByKey(add).filter(lambda x: x[0] != "").filter(lambda x: x[0] not in swlist.value).map(strip_end).map(strip_front).collect() #remove stop words
     res = sorted(new_count, key=lambda x:x[1], reverse = True) #sort the list based on the count
     res = res[0:int(sys.argv[1])]  # get the top x number of words. x provided by sys.argv[1]
+
+
+    #write in a json file as the output
     res_file = os.path.join(script_dir, 'sp3.json')
     with open(res_file, 'w') as file:
         json.dump(OrderedDict(res), file)
