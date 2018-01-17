@@ -1,5 +1,5 @@
 # whusym-p0:  basic NLP in a distributed environment
-This is Yuanming (Jeremy) Shi's project 0 for Data Science Practicum (Sp 18) at the University of Georgia. This project is about basic word counts in a documents and calculate TF-IDF scores across different documents. Here are what different Python files are about:
+This is Yuanming (Jeremy) Shi's project 0 for Data Science Practicum (Sp 18) at the University of Georgia. This project is about basic word counts in a documents and calculate TF-IDF scores across different documents. Project materials and instructions can be found [here](https://github.com/dsp-uga/sp18/tree/master/projects/p0).  Here are what different Python files in my repo are about:
 
 * *subprojectA.py*: preprocessing (removing newline markers and empty str) and return top 40 words across all the documents in the /data folder.
 * *subprojectB.py*: remove stop words based on the results of subprojectA.
@@ -26,7 +26,7 @@ For instance,
 ./bin/spark-submit --master spark://1.1.1.1:7077 /Users/foo/whusym-p0/subprojectC.py 40 stopwords.txt punc.txt
 ```
 
-is a command to run *subprojectC.py* at the directory */Users/foo/whusym-p0/subprojectC.py* with first *40* top words, and the stopwords file is *stopwords.txt*, and the punctuation list is in *punc.txt* (Here both txt files need to be at the same directory with the aforementioned python script). Different subprojects need different numbers of kwargs. In addition to the file path, subprojectA needs 1, subprojectB needs 2, and subprojectC and subprojectD need 3, respectively. 
+is a command to run *subprojectC.py* at the directory */Users/foo/whusym-p0/subprojectC.py* with first *40* top words, and the stopwords file is *stopwords.txt*, and the punctuation list is in *punc.txt* (Here both txt files need to be at the same directory with the aforementioned python script). Different subprojects need different numbers of kwargs. In addition to the file path, subprojectA needs 1, subprojectB needs 2, and subprojectC and subprojectD need 3, respectively.
 
 If you have workers set on the master, the scripts should run on workers as well. If you cannot find your spark master IP address or you want to see your the status of workers, you can check on http://localhost:8080/.
 
