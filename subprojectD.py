@@ -20,17 +20,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from __future__ import print_function
+from __future__ import division
 import json, sys, os
 from operator import add
 from pyspark.sql import SparkSession
 from pyspark import SparkContext
 from collections import OrderedDict
+import math
 
 if __name__ == "__main__":
     """
     Usage: calculate the total word counts for top words among 8 books in the Gutenberg Project
     """
-    if len(sys.argv) != 3 or not int(sys.argv[1]):
+    if len(sys.argv) != 4 or not int(sys.argv[1]):
         print("Please set one integer as the first argument and a punctuation file as the second argument")
         exit(-1)
 
@@ -45,12 +47,12 @@ if __name__ == "__main__":
     books = spark.sparkContext.wholeTextFiles(data_path) # Books (*.txt files) are in the /data folder
 
     #stopwords
-    sw_path = os.path.join(script_dir, 'stopwords.txt')
+    sw_path = os.path.join(script_dir, str(sys.argv[2]))
     sw = spark.sparkContext.textFile(sw_path)
     swlist = spark.sparkContext.broadcast(sw.collect())
 
     #punctuations
-    punc_path = os.path.join(script_dir, str(sys.argv[2]))
+    punc_path = os.path.join(script_dir, str(sys.argv[3]))
     with open(punc_path, 'r') as f:
         punc = f.read()
     print (punc)
@@ -88,20 +90,24 @@ if __name__ == "__main__":
     def string_count(x):
         return [((x[0], i), 1) for i in x[1]]
 
+    def tfidf(x):
+        x = [x[0], [(v_sub[0], v_sub[1] * math.log(maxn/len(x[1]))) for i_sub, v_sub in enumerate(x[1])]]
+        return x
 
-    # print (books.map(lambda x: (x[0], x[1].lower())).flatMap(lambda x: (x[0], x[1].split(' '))).collect())
-    counts = books.map(lambda x: (x[0], x[1].lower())).flatMap(lambda x: [(x[0], x[1].split(' '))]).map(strip).map(word_count).zipWithIndex().map(format_count).\
+    counts = books.map(lambda x: (x[0], x[1].lower())).flatMap(lambda x: [(x[0], (' '.join(x[1].splitlines())).split())]).map(strip).map(word_count).zipWithIndex().map(format_count).\
     flatMap(lambda x: [(i[0], i[1]) for i in x]).reduceByKey(add).map(count_dict_per_doc).groupByKey().mapValues(list)
-        #.zipWithIndex().map(get_count)#
-    # #.groupByKey()
-    # print (counts.type)
-    # for x in counts:
-    #     strip(x)
-    #     print (x)
-    # new_count = counts.filter(lambda x: x[0] not in swlist.value).collect()
-    # print (counts.collect())
-    # res = sorted(counts, key=lambda x:x[1], reverse = True) #sort the list as the result
-    # res = res[0:int(sys.argv[1])] # get the top x number of words. x provided by sys.argv[1]
-    res_file = os.path.join(script_dir, 's4.json')
+
+    maxn = max([len(v_main[1]) for i_main, v_main in enumerate(counts.collect())])
+
+    counts = counts.map(tfidf)
+    l = counts.collect()
+    k = [[i[0], [0]*maxn] for i in l]
+    for i_main, v_main in enumerate(l):
+        for i_sub, v_sub in enumerate(v_main[1]):
+            k[i_main][1][v_sub[0]] = v_sub[1]
+    k = [sorted(k, key = lambda x:x[1][n] ,reverse=True)[0:5] for n in range(8)]
+    ans = [(k[0],k[1][i]) for i, v in enumerate(k) for k in v]
+
+    res_file = os.path.join(script_dir, 'sp4.json')
     with open(res_file, 'w') as file:
-        json.dump(counts.collect(), file)
+        json.dump(dict(ans), file)
