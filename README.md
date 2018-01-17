@@ -33,3 +33,6 @@ If you cannot find your spark master IP address, you can check on http://localho
 
 # TODO
 * Running more tests on subprojectD to improve TF-IDF performances.
+
+# Acknowledgements
+Great thanks to [Dr. Shannon Quinn](cobweb.cs.uga.edu/~squinn/) for his instructions. I also benefited from my discussions with Jenny.
