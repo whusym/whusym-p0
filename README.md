@@ -1,4 +1,4 @@
-# whusym-p0
+# whusym-p0:  basic NLP in a distributed environment
 This is Yuanming (Jeremy) Shi's project 0 for Data Science Practicum (Sp 18) at the University of Georgia. This project is about basic word counts in a documents and calculate TF-IDF scores across different documents. Here are what different Python files are about:
 
 * *subprojectA.py*: preprocessing (removing newline markers and empty str) and return top 40 words across all the documents in the /data folder.
@@ -12,10 +12,14 @@ All the scripts are written in Python (and should be compatible with both Python
 # How to run
 1. Make sure you have all the dependencies installed.
 2. Clone or download the repo and unzip it.
-3. To start each subproject, you need to go to your apache spark folder, and run the following command:
+3. In order to set up master-slave(driver-worker) environment in Spark, you first need to go to your spark folder and run the following (depending on your setting of Spark, the number of workers will vary):
 ```
-./bin/spark-submit --master [YOUR-SPARK-MASTER ADDRESS] [**kwargs]
+./sbin/start-all.sh
+```
 
+4. To start each subproject, you need to go to your apache spark folder, and run the following command:
+```
+./bin/spark-submit --master [YOUR-SPARK-MASTER-ADDRESS] [**kwargs]
 ```
 For instance,
 ```
@@ -24,4 +28,8 @@ For instance,
 
 is a command to run *subprojectC.py* at the directory */Users/foo/whusym-p0/subprojectC.py* with first *40* top words, and the stopwords file is *stopwords.txt*, and the punctuation list is in *punc.txt* (Here both txt files need to be at the same directory with the aforementioned python script).
 
-If you have workers set on the master, the scripts should run on workers as well.
+If you cannot find your spark master IP address, you can check on http://localhost:8080/. If you have workers set on the master, the scripts should run on workers as well.
+
+
+# TODO
+* Running more tests on subprojectD to improve TF-IDF performances.
