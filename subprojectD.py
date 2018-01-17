@@ -56,13 +56,14 @@ if __name__ == "__main__":
     with open(punc_path, 'r') as f:
         punc = f.read()
     print (punc)
-    # # punc = spark.sparkContext.textFile(punc_path, use_unicode=False)
-    # punc = spark.sparkContext.parallelize(punc)
-    # print (punc.collect())
+
     punc_list = spark.sparkContext.broadcast(punc)
     print (punc_list.value)
 
     def strip(x):
+        '''
+        Strip words whose first or last character is a punctuation. (But the project may not need this complicated process?)
+        '''
         for i, v in enumerate(x[1]):
             if len(v) > 1:
                 if v[0] in punc_list.value:
@@ -73,41 +74,48 @@ if __name__ == "__main__":
 
 
     def word_count(x):
+        '''
+        Count words in each document.
+        '''
         return [(v, 1) for i, v in enumerate(x[1])]
 
     def count_dict_per_doc(x):
+        '''
+        Transform ((word, docname), count) into (word, (count, doc)). The purpose is for tfidf calculations.
+        '''
         return (x[0][0],(x[0][1], x[1]))
 
-    def reorder(x):
-        '''
-        reorder the indices of the documents
-        '''
-        pass
-
     def format_count(x):
-        return [((v[0], x[1]), 1)for i, v in enumerate(x[0])]
+        '''
+        for each word in each document, we return ((word, docname), 1)
+        '''
+        return [((v[0], x[1]), 1) for i, v in enumerate(x[0])]
 
     def string_count(x):
         return [((x[0], i), 1) for i in x[1]]
 
     def tfidf(x):
-        x = [x[0], [(v_sub[0], v_sub[1] * math.log(maxn/len(x[1]))) for i_sub, v_sub in enumerate(x[1])]]
-        return x
+        '''
+        Get the tfidf score for each word.
+        '''
+        return [x[0], [(v_sub[0], v_sub[1] * math.log(maxn/len(x[1]))) for i_sub, v_sub in enumerate(x[1])]]
 
+    #count words in RDD
     counts = books.map(lambda x: (x[0], x[1].lower())).flatMap(lambda x: [(x[0], (' '.join(x[1].splitlines())).split())]).map(strip).map(word_count).zipWithIndex().map(format_count).\
     flatMap(lambda x: [(i[0], i[1]) for i in x]).reduceByKey(add).map(count_dict_per_doc).groupByKey().mapValues(list)
 
-    maxn = max([len(v_main[1]) for i_main, v_main in enumerate(counts.collect())])
+    maxn = max([len(v_main[1]) for i_main, v_main in enumerate(counts.collect())])   #find the maximum length of v_main[1], which is the total number of documents
 
-    counts = counts.map(tfidf)
-    l = counts.collect()
-    k = [[i[0], [0]*maxn] for i in l]
-    for i_main, v_main in enumerate(l):
+    counts = counts.map(tfidf)  #apply tfidf function
+    l = counts.collect()        #collect counts data from RDD into Python
+    k = [[i[0], [0]*maxn] for i in l]   #build another dummy list for maniputation (and eventually ranking the tfidf scores)
+    for i_main, v_main in enumerate(l):    #fill in the values for dummy list k
         for i_sub, v_sub in enumerate(v_main[1]):
             k[i_main][1][v_sub[0]] = v_sub[1]
-    k = [sorted(k, key = lambda x:x[1][n] ,reverse=True)[0:5] for n in range(8)]
-    ans = [(k[0],k[1][i]) for i, v in enumerate(k) for k in v]
+    k = [sorted(k, key = lambda x:x[1][n] ,reverse=True)[0:5] for n in range(maxn)]   #sort list k and select words with top 5 tfidf scores  in each document
+    ans = [(k[0],k[1][i]) for i, v in enumerate(k) for k in v]    #transform the results of list k into an answer list
 
+    #write in a json file as the output
     res_file = os.path.join(script_dir, 'sp4.json')
     with open(res_file, 'w') as file:
         json.dump(dict(ans), file)

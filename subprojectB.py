@@ -41,22 +41,27 @@ if __name__ == "__main__":
         .getOrCreate()
 
     def split(x):
+        '''
+        Split characters in a documents (including removing newline markers).
+        '''
         x = x.splitlines()
         x = ' '.join(x)
-        # x = x.split(' ')
-        # a = []
         return x
 
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    data_path = os.path.join(script_dir, 'data/')
-    sw_path = os.path.join(script_dir, sys.argv[2])
+    data_path = os.path.join(script_dir, 'data/')    # Books (*.txt files) are in the /data folder
+    books = spark.sparkContext.wholeTextFiles(data_path)
+    
+    sw_path = os.path.join(script_dir, sys.argv[2])  # read in the third argument from the command line (as stopwords file)
     sw = spark.sparkContext.textFile(sw_path)
     swlist = spark.sparkContext.broadcast(sw.collect())
-    books = spark.sparkContext.wholeTextFiles(data_path) # Books (*.txt files) are in the /data folder
+
     counts = books.map(lambda x: x[1].lower()).map(split).flatMap(lambda x: x.split(' ')).map(lambda x: (x, 1)).reduceByKey(add)
     new_count = counts.filter(lambda x: x[0] != "").filter(lambda x: x[0] not in swlist.value).collect() #remove stop words
-    res = sorted(new_count, key=lambda x:x[1], reverse = True) #sort the list as the result
+    res = sorted(new_count, key=lambda x:x[1], reverse = True) #sort the list based on counts
     res = res[0:int(sys.argv[1])] # get the top x number of words. x provided by sys.argv[1]
+
+    #write in a json file as the output
     res_file = os.path.join(script_dir, 'sp2.json')
     with open(res_file, 'w') as file:
         json.dump(OrderedDict(res), file)
